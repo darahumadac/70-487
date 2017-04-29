@@ -12,11 +12,30 @@ namespace UnitTests
     
     public class BaseUserRepositoryTest
     {
-        private readonly IRepository<User> _userRepository;
+        protected readonly IRepository<User> _userRepository;
 
         protected BaseUserRepositoryTest()
         {
             
+        }
+
+        private void RemoveUser(string username)
+        {
+            AppEntities db = new AppEntities();
+            User user = db.Users.FirstOrDefault(u => u.Username.Equals(username));
+            if (user != null)
+            {
+                db.Users.Remove(user);
+                db.SaveChanges();
+            }
+        }
+
+        private void UndoUserFirstName()
+        {
+            AppEntities db = new AppEntities();
+            User updateUser = db.Users.FirstOrDefault(u => u.Username.Equals("darahumadac"));
+            updateUser.FirstName = "Darah";
+            db.SaveChanges();
         }
 
         protected BaseUserRepositoryTest(IRepository<User> userRepository)
@@ -43,14 +62,6 @@ namespace UnitTests
         [TestMethod]
         public virtual void AddUser()
         {
-            AppEntities db = new AppEntities();
-            User janeDoe = db.Users.FirstOrDefault(u => u.Username.Equals("janedoe01"));
-            if (janeDoe != null)
-            {
-                db.Users.Remove(janeDoe);
-                db.SaveChanges();
-            }
-
             User newUser = new User()
             {
                 FirstName = "Jane",
@@ -63,6 +74,57 @@ namespace UnitTests
 
             User retrievedUser = _userRepository.GetAll().FirstOrDefault(u => u.Username.Equals("janedoe01"));
             Assert.IsNotNull(retrievedUser);
+
+            RemoveUser("janedoe01");
+        }
+
+        [TestMethod]
+        public void UpdateUser()
+        {
+            AppEntities db = new AppEntities();
+
+            User updatedUser = UpdateUserFirstName(db, "Updated Darah");
+
+            Assert.IsNotNull(db.Users.FirstOrDefault(u => u.FirstName.Equals("Updated Darah")));
+
+            UndoUserFirstName();
+        }
+
+        private User UpdateUserFirstName(AppEntities db, string newFirstName)
+        {
+            
+            User updateUser = db.Users.FirstOrDefault(u => u.Username.Equals("darahumadac"));
+            if (updateUser != null)
+            {
+                updateUser.FirstName = newFirstName;
+
+                try
+                {
+                    _userRepository.Update(updateUser);
+                }
+                catch (NotImplementedException ex)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    updateUser = new AppEntities().Users.FirstOrDefault(u => u.Username.Equals("darahumadac"));
+                }
+            }
+
+            return updateUser;
+
+        }
+
+        [TestMethod]
+        public void Failed_UpdateUser_Must_Rollback()
+        {
+            AppEntities db = new AppEntities();
+
+            User updateUser = UpdateUserFirstName(db, null);
+
+            Assert.AreEqual("Darah", updateUser.FirstName);
+
         }
 
         [TestMethod]
@@ -72,6 +134,9 @@ namespace UnitTests
             Assert.IsTrue(users.Result.Any());
 
         }
+
+
+
 
     }
 }

@@ -23,12 +23,6 @@ namespace DataAccess.EntityFrameworkRepository
 
         public User GetById(int id)
         {
-            //Using DbContext
-            //using (var db = new AppEntities())
-            //{
-            //    return db.Users.Find(id);
-            //}
-
             //Using ObjectContext
             //Notes: the FROM syntax:   SELECT VALUE <Alias> FROM <ConnectionStringName>.<TableName> AS <Alias>
              using (var dbObjectContext = new AppEntitiesObjContext())
