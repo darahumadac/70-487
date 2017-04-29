@@ -7,6 +7,7 @@ using System.Data.SqlClient;
 using System.Threading.Tasks;
 using System.Transactions;
 using DataAccess.EntityFrameworkRepository;
+using IsolationLevel = System.Data.IsolationLevel;
 
 namespace DataAccess.AdoNetSqlRepository
 {
@@ -104,9 +105,118 @@ namespace DataAccess.AdoNetSqlRepository
 
         public void Update(User entity)
         {
-            throw new System.NotImplementedException();
+            using (SqlConnection sqlConnection = new SqlConnection(SQL_CONNECTION_STRING))
+            {
+                sqlConnection.Open();
+                using (SqlTransaction sqlTransaction = sqlConnection.BeginTransaction(IsolationLevel.Serializable))
+                {
+                    string updateCommand = "UPDATE USERS " +
+                                           "SET FirstName = @FirstName, " +
+                                           "LastName = @lastName, " +
+                                           "Username = @userName, " +
+                                           "City = @city " +
+                                           "WHERE Id = @Id";
+                    using (SqlCommand sqlCommand = new SqlCommand(updateCommand, sqlConnection, sqlTransaction))
+                    {
+                        sqlCommand.Parameters.Add(new SqlParameter("firstName", entity.FirstName));
+                        sqlCommand.Parameters.Add(new SqlParameter("lastName", entity.LastName));
+                        sqlCommand.Parameters.Add(new SqlParameter("username", entity.Username));
+                        sqlCommand.Parameters.Add(new SqlParameter("city", entity.City));
+                        sqlCommand.Parameters.Add(new SqlParameter("Id", entity.Id));
+
+                        try
+                        {
+                            sqlCommand.ExecuteNonQuery();
+                            sqlTransaction.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            sqlTransaction.Rollback();
+                        }
+                    }
+
+                }
+            }
         }
 
+        #region Needs Fixing - EntityCommand
+        //This is not working
+        //TODO: Fix syntax of updateCommand
+        private void UpdateUsingEntityCommand(User entity)
+        {
+            using (EntityConnection entityConnection = new EntityConnection("name=AppEntities"))
+            {
+                entityConnection.Open();
+
+                using (EntityTransaction entityTransaction =
+                    entityConnection.BeginTransaction(IsolationLevel.Serializable))
+                {
+
+                    string updateCommand = "UPDATE AppEntities.USERS AS U " +
+                                           "SET U.FirstName = @FirstName, " +
+                                           "U.LastName = @lastName, " +
+                                           "U.Username = @userName, " +
+                                           "U.City = @city " +
+                                           "WHERE U.Id = @Id";
+
+
+
+                    using (EntityCommand command =
+                        new EntityCommand(updateCommand, entityConnection, entityTransaction))
+                    {
+                        EntityParameter firstName = new EntityParameter()
+                        {
+                            ParameterName = "firstName",
+                            Value = entity.FirstName
+                        };
+                        EntityParameter lastName = new EntityParameter()
+                        {
+                            ParameterName = "lastName",
+                            Value = entity.LastName
+                        };
+
+                        EntityParameter username = new EntityParameter()
+                        {
+                            ParameterName = "username",
+                            Value = entity.Username
+                        };
+
+                        EntityParameter city = new EntityParameter()
+                        {
+                            ParameterName = "city",
+                            Value = entity.City
+                        };
+
+                        EntityParameter id = new EntityParameter()
+                        {
+                            ParameterName = "Id",
+                            Value = entity.Id
+                        };
+
+                        command.Parameters.Add(firstName);
+                        command.Parameters.Add(lastName);
+                        command.Parameters.Add(username);
+                        command.Parameters.Add(city);
+                        command.Parameters.Add(id);
+
+                        try
+                        {
+                            command.ExecuteNonQuery();
+                            entityTransaction.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            entityTransaction.Rollback();
+                        }
+
+
+                    }
+
+
+                }
+            }
+        }
+        #endregion
 
         public void Delete(int id)
         {

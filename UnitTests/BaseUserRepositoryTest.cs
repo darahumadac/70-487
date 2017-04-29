@@ -108,6 +108,10 @@ namespace UnitTests
                 }
                 catch (Exception ex)
                 {
+                    //don't do anything
+                }
+                finally
+                {
                     updateUser = new AppEntities().Users.FirstOrDefault(u => u.Username.Equals("darahumadac"));
                 }
             }
