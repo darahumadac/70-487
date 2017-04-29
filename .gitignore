@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/DataAccess/obj/Debug
+/UnitTests/obj/Debug
+/WCF.UserService/obj/Debug
+/70-487.v12.suo
